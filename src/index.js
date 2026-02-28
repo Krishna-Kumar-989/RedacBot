@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Events } = require('discord.js');
 const { handleCommand } = require('./commands');
+const { connectMongo } = require('./history');
 
 const client = new Client({
   intents: [
@@ -54,4 +55,7 @@ if (!token || token === 'YOUR_BOT_TOKEN_HERE') {
   process.exit(1);
 }
 
-client.login(token);
+// Connect to MongoDB (if configured), then login to Discord
+connectMongo().then(() => {
+  client.login(token);
+});

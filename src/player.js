@@ -1,4 +1,5 @@
 const ffmpegPath = require('ffmpeg-static');
+const { logEvent } = require('./history');
 require('dotenv').config();
 const {
   joinVoiceChannel,
@@ -28,6 +29,9 @@ class MusicPlayer {
         player: null,
         currentTrack: null,
         textChannel: null,
+        // History tracking fields
+        playStartTime: null,
+        userContext: null,   // { userId, username, guildName }
       });
     }
     return this.guilds.get(guildId);
@@ -77,13 +81,35 @@ class MusicPlayer {
     }
   }
 
-  async play(guildId, voiceChannel, textChannel, query) {
+  async play(guildId, voiceChannel, textChannel, query, userContext) {
     const track = await this.search(query);
     if (!track) return null;
 
     const state = this.getState(guildId);
     state.textChannel = textChannel;
+    state.userContext = userContext || state.userContext;
+
+    track._query = query;
+    const wasQueued = !!(state.currentTrack || (state.player && state.player.state.status === AudioPlayerStatus.Playing));
+    const queuePosition = wasQueued ? state.queue.length + 1 : 0;
+    track._wasQueued = wasQueued;
+    track._queuePosition = queuePosition;
+
     state.queue.push(track);
+
+    // Log play_start
+    logEvent({
+      userId: userContext?.userId,
+      username: userContext?.username,
+      guildId,
+      guildName: userContext?.guildName,
+      query,
+      track,
+      action: 'play_start',
+      listenDurationSec: 0,
+      wasQueued,
+      queuePosition,
+    });
 
     if (!state.connection) {
       state.connection = joinVoiceChannel({
@@ -96,6 +122,8 @@ class MusicPlayer {
       state.connection.subscribe(state.player);
 
       state.player.on(AudioPlayerStatus.Idle, () => {
+        // Log completed event
+        this._logTrackEnd(guildId, 'completed');
         state.currentTrack = null;
         this._killProcesses(guildId);
         this._playNext(guildId);
@@ -172,6 +200,7 @@ class MusicPlayer {
       });
 
       state.currentTrack = track;
+      state.playStartTime = Date.now();
       state.player.play(resource);
 
       const { buildNowPlaying } = require('./embed');
@@ -215,6 +244,7 @@ class MusicPlayer {
   skip(guildId) {
     const state = this.getState(guildId);
     if (state.player) {
+      this._logTrackEnd(guildId, 'skipped');
       this._killProcesses(guildId);
       state.player.stop();
       return true;
@@ -251,11 +281,39 @@ class MusicPlayer {
 
   destroy(guildId) {
     const state = this.getState(guildId);
+    this._logTrackEnd(guildId, 'stopped');
     this._killProcesses(guildId);
     if (state.connection) {
       state.connection.destroy();
     }
     this.guilds.delete(guildId);
+  }
+
+  /**
+   * Log a track-end event (completed, skipped, or stopped) with listen duration.
+   */
+  _logTrackEnd(guildId, action) {
+    const state = this.guilds.get(guildId);
+    if (!state || !state.currentTrack) return;
+
+    const listenDurationSec = state.playStartTime
+      ? Math.round((Date.now() - state.playStartTime) / 1000)
+      : 0;
+
+    logEvent({
+      userId: state.userContext?.userId,
+      username: state.userContext?.username,
+      guildId,
+      guildName: state.userContext?.guildName,
+      query: state.currentTrack._query || '',
+      track: state.currentTrack,
+      action,
+      listenDurationSec,
+      wasQueued: state.currentTrack._wasQueued || false,
+      queuePosition: state.currentTrack._queuePosition || 0,
+    });
+
+    state.playStartTime = null;
   }
 }
 

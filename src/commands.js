@@ -64,8 +64,14 @@ async function handleCommand(interaction) {
       await interaction.deferReply();
       const query = interaction.options.getString('query');
 
+      const userContext = {
+        userId: interaction.user.id,
+        username: interaction.user.username,
+        guildName: interaction.guild?.name || 'Unknown',
+      };
+
       try {
-        const track = await player.play(guildId, voiceChannel, interaction.channel, query);
+        const track = await player.play(guildId, voiceChannel, interaction.channel, query, userContext);
 
         if (!track) {
           return interaction.editReply({
