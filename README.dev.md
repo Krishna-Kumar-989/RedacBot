@@ -72,6 +72,18 @@ npm run deploy   # register slash commands (first time / after changes)
 npm start        # start the bot
 ```
 
+### Running with Docker
+
+Make sure your `.env` has `DISCORD_TOKEN` and `CLIENT_ID` set, then:
+
+```bash
+npm run deploy                # register slash commands (still needed once)
+docker compose up -d          # starts bot + MongoDB
+docker compose logs -f bot    # view bot logs
+```
+
+> **Note:** The `docker-compose.yml` automatically sets `MONGO_URI` and `YTDLP_PATH` — no extra config needed.
+
 ---
 
 ## Project Structure
