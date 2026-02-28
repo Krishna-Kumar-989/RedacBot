@@ -1,0 +1,19 @@
+{
+  "name": "redacbot",
+  "version": "1.0.0",
+  "description": "RedacBot — Discord music bot, plays YouTube music ad-free",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.18.0",
+    "@distube/ytdl-core": "^4.16.12",
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.0",
+    "ffmpeg-static": "^5.3.0",
+    "libsodium-wrappers": "^0.7.15",
+    "play-dl": "^1.9.7"
+  }
+}
