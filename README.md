@@ -2,6 +2,10 @@
 
 > **Ad-free YouTube music for your Discord server.** Just type a song name and RedacBot plays it in your voice channel.
 
+## Add to Your Server
+
+[**Click here to invite RedacBot to your Discord server**](https://discord.com/oauth2/authorize?client_id=1477270346410229791&permissions=3164160&integration_type=0&scope=bot+applications.commands)
+
 ---
 
 ## 🎮 How to Use
