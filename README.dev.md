@@ -1,10 +1,10 @@
-# 🛠️ RedacBot — Developer Guide
+# RedacBot — Developer Guide
 
 Technical documentation for setting up, running, and modifying RedacBot.
 
 ---
 
-## 📦 Tech Stack
+## Tech Stack
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
@@ -14,10 +14,11 @@ Technical documentation for setting up, running, and modifying RedacBot.
 | YouTube Download | yt-dlp (Python) | Reliable ad-free audio streaming |
 | Audio Processing | ffmpeg-static (npm) | Transcoding audio to PCM for Discord |
 | Encryption | libsodium-wrappers | Voice encryption (required by Discord) |
+| Database | mongoose (MongoDB) | Storing user listening history |
 
 ---
 
-## 🚀 Setup
+## Setup
 
 ### Prerequisites
 
@@ -49,6 +50,9 @@ CLIENT_ID=your_application_id
 
 # Absolute path to yt-dlp binary (from the python command above)
 YTDLP_PATH=C:\Users\you\...\yt-dlp.EXE
+
+# MongoDB connection string for listening history
+MONGO_URI=mongodb://localhost:27017/redacbot
 ```
 
 ### Discord Developer Portal Setup
@@ -70,7 +74,7 @@ npm start        # start the bot
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 muzic/
@@ -83,12 +87,13 @@ muzic/
     ├── commands.js           # Slash command definitions & handler switch
     ├── player.js             # Core engine — search, stream, queue, voice
     ├── embed.js              # Discord embed builders (Now Playing, Queue, etc.)
+    ├── history.js            # User listening history — logs to MongoDB
     └── deploy-commands.js    # One-time REST API command registration
 ```
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 User types /mzplay "song name"
@@ -100,12 +105,15 @@ User types /mzplay "song name"
   player.js
     ├── search()     → play-dl searches YouTube, returns track metadata
     ├── play()       → Joins voice channel, adds to queue, starts playback
+    │                   └── logs play_start to MongoDB via history.js
     └── _playTrack() → Spawns yt-dlp │ ffmpeg pipeline:
                          yt-dlp (downloads audio) → stdout
                                 │
                          ffmpeg (converts to PCM s16le 48kHz stereo) → stdout
                                 │
                          createAudioResource() → Discord voice player
+                                │
+                         on end/skip/stop → logs event to MongoDB via history.js
 ```
 
 ### Audio Pipeline
@@ -120,7 +128,7 @@ yt-dlp --bestudio -o - <url>  →  ffmpeg -i pipe:0 -f s16le -ar 48000 -ac 2 pip
 
 ---
 
-## 🔧 Adding a New Command
+## Adding a New Command
 
 1. **Define** the command in `commands.js` (add a `SlashCommandBuilder` to the `commands` array)
 2. **Handle** it in the `switch` block inside `handleCommand()`
@@ -128,7 +136,7 @@ yt-dlp --bestudio -o - <url>  →  ffmpeg -i pipe:0 -f s16le -ar 48000 -ac 2 pip
 
 ---
 
-## ❓ Troubleshooting
+##  Troubleshooting
 
 | Issue | Cause | Fix |
 |-------|-------|-----|

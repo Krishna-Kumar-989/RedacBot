@@ -24,13 +24,13 @@ const History = mongoose.model('History', historySchema);
 async function connectMongo() {
   const uri = process.env.MONGO_URI;
   if (!uri) {
-    console.error('[HISTORY] ❌ No MONGO_URI found in .env — history logging disabled.');
+    console.error('[HISTORY] No MONGO_URI found in .env — history logging disabled.');
     return;
   }
 
   try {
     await mongoose.connect(uri);
-    console.log('[HISTORY] Connected to MongoDB ✅');
+    console.log('[HISTORY] Connected to MongoDB');
   } catch (err) {
     console.error('[HISTORY] MongoDB connection failed:', err.message);
   }
